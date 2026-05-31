@@ -1,158 +1,456 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple ETF Calculator</title>
-    <!-- Modern design styles -->
-    <script src="https://jsdelivr.net"></script>
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETF Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f0f0d;
+      --surface:  #191916;
+      --surface2: #222220;
+      --border:   #2e2e2a;
+      --border2:  #3a3a35;
+      --text:     #e8e6df;
+      --muted:    #7a7870;
+      --hint:     #4a4845;
+      --vgs:      #d4a85c;
+      --ndq:      #7eb8a0;
+      --vas:      #c07a72;
+      --accent:   #d4a85c;
+      --danger:   #c07a72;
+      --mono:     'DM Mono', monospace;
+      --serif:    'Fraunces', Georgia, serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 3rem 1rem 4rem;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* ── Header ── */
+    .header {
+      margin-bottom: 2.5rem;
+    }
+    .header h1 {
+      font-family: var(--serif);
+      font-size: 2.4rem;
+      font-weight: 300;
+      font-style: italic;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+    .header p {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── Section label ── */
+    .label {
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.25rem;
+      margin-bottom: 10px;
+    }
+
+    /* ── Target allocation grid ── */
+    .target-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .target-item {
+      text-align: center;
+    }
+    .target-item .fund-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .fund-label.vgs { color: var(--vgs); }
+    .fund-label.ndq { color: var(--ndq); }
+    .fund-label.vas { color: var(--vas); }
+
+    /* ── Inputs ── */
+    input[type="number"] {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      font-weight: 500;
+      padding: 0.55rem 0.5rem;
+      width: 100%;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    .deposit-input {
+      font-size: 1.8rem !important;
+      padding: 0.75rem !important;
+      letter-spacing: -0.02em;
+    }
+
+    /* ── Warning ── */
+    .warning {
+      display: none;
+      font-size: 0.7rem;
+      color: var(--danger);
+      margin-top: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border-left: 2px solid var(--danger);
+      background: rgba(192,122,114,0.08);
+    }
+
+    /* ── Balance grid ── */
+    .balance-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 1rem;
+    }
+    .balance-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.75rem 0.5rem;
+      text-align: center;
+    }
+    .balance-item .fund-label {
+      margin-bottom: 8px;
+    }
+    .holding-pct {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 7px;
+      display: block;
+    }
+    .holding-pct span {
+      color: var(--text);
+    }
+
+    /* ── Drift bar ── */
+    .drift-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .drift-row span {
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .drift-bar {
+      display: flex;
+      height: 3px;
+      border-radius: 2px;
+      overflow: hidden;
+      gap: 2px;
+    }
+    .drift-bar div {
+      transition: flex 0.25s ease;
+    }
+    #barVgs { background: var(--vgs); }
+    #barNdq { background: var(--ndq); }
+    #barVas { background: var(--vas); }
+
+    /* ── Buy orders ── */
+    .orders {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .orders-header {
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .order-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .order-row:last-child { border-bottom: none; }
+    .order-row:hover { background: var(--surface2); }
+
+    .order-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.vgs { background: var(--vgs); }
+    .dot.ndq { background: var(--ndq); }
+    .dot.vas { background: var(--vas); }
+
+    .order-fund {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .order-sub {
+      font-size: 0.65rem;
+      color: var(--hint);
+      margin-left: 10px;
+    }
+    .order-amount {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .order-amount.zero { color: var(--hint); }
+
+    /* ── Footer ── */
+    .footer {
+      font-size: 0.65rem;
+      color: var(--hint);
+      letter-spacing: 0.06em;
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1rem 0;
+    }
+
+    /* ── Fade-in on load ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .app { animation: fadeUp 0.4s ease both; }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
+<body>
+  <div class="app">
 
-    <div class="bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-md border border-slate-700">
-        <h1 class="text-2xl font-bold text-center mb-1 text-emerald-400">📈 ETF Planner</h1>
-        <p class="text-slate-400 text-xs text-center mb-6">Fortnightly Inflow-Only Calculator</p>
-
-        <!-- Section 1: Set Target Percentages -->
-        <div class="space-y-3 mb-6 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
-            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Your Target Percentages (%)</h2>
-            <div class="grid grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-[10px] text-slate-400 mb-1 text-center font-medium">VGS Target %</label>
-                    <input type="number" id="vgsTarget" value="45" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-center font-bold text-sm focus:outline-none focus:border-emerald-500">
-                </div>
-                <div>
-                    <label class="block text-[10px] text-slate-400 mb-1 text-center font-medium">NDQ Target %</label>
-                    <input type="number" id="ndqTarget" value="35" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-center font-bold text-sm focus:outline-none focus:border-emerald-500">
-                </div>
-                <div>
-                    <label class="block text-[10px] text-slate-400 mb-1 text-center font-medium">VAS Target %</label>
-                    <input type="number" id="vasTarget" value="20" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-center font-bold text-sm focus:outline-none focus:border-emerald-500">
-                </div>
-            </div>
-            <div id="targetWarning" class="text-[11px] text-rose-400 text-center font-medium hidden">⚠️ Targets must add up to exactly 100%</div>
-        </div>
-
-        <!-- Section 2: Input Current Balances -->
-        <div class="space-y-4 mb-6">
-            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">1. Current Portfolio Balances ($)</h2>
-            <div class="grid grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1 font-medium">VGS Balance</label>
-                    <input type="number" id="vgsCurrent" value="4500" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-center font-semibold focus:outline-none focus:border-emerald-500">
-                    <div class="text-[10px] text-slate-400 text-center mt-1">Holding: <span id="vgsCurrentPct" class="font-bold text-emerald-400">0.0%</span></div>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1 font-medium">NDQ Balance</label>
-                    <input type="number" id="ndqCurrent" value="3500" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-center font-semibold focus:outline-none focus:border-emerald-500">
-                    <div class="text-[10px] text-slate-400 text-center mt-1">Holding: <span id="ndqCurrentPct" class="font-bold text-emerald-400">0.0%</span></div>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1 font-medium">VAS Balance</label>
-                    <input type="number" id="vasCurrent" value="2000" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-center font-semibold focus:outline-none focus:border-emerald-500">
-                    <div class="text-[10px] text-slate-400 text-center mt-1">Holding: <span id="vasCurrentPct" class="font-bold text-emerald-400">0.0%</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 3: Input New Cash -->
-        <div class="mb-6">
-            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">2. New Cash to Deposit ($)</h2>
-            <input type="number" id="newDeposit" value="1000" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xl text-center font-bold text-emerald-400 focus:outline-none focus:border-emerald-500">
-        </div>
-
-        <!-- Section 4: Output Display -->
-        <div class="bg-slate-950 rounded-xl p-4 border border-slate-700 space-y-3">
-            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">3. Today's Buy Orders</h2>
-            
-            <div class="flex justify-between items-center p-2 bg-slate-900 rounded-lg border border-slate-800">
-                <span class="font-bold text-slate-300">🛒 BUY VGS:</span>
-                <span id="vgsBuy" class="text-xl font-black text-emerald-400">$0.00</span>
-            </div>
-            <div class="flex justify-between items-center p-2 bg-slate-900 rounded-lg border border-slate-800">
-                <span class="font-bold text-slate-300">🛒 BUY NDQ:</span>
-                <span id="ndqBuy" class="text-xl font-black text-emerald-400">$0.00</span>
-            </div>
-            <div class="flex justify-between items-center p-2 bg-slate-900 rounded-lg border border-slate-800">
-                <span class="font-bold text-slate-300">🛒 BUY VAS:</span>
-                <span id="vasBuy" class="text-xl font-black text-emerald-400">$0.00</span>
-            </div>
-        </div>
+    <div class="header">
+      <h1>ETF Planner</h1>
+      <p>Fortnightly inflow-only rebalancing</p>
     </div>
 
-    <!-- The Math Calculations -->
-    <script>
-        function calculate() {
-            // 1. Read targets from screen
-            const vgsT = (parseFloat(document.getElementById('vgsTarget').value) || 0) / 100;
-            const ndqT = (parseFloat(document.getElementById('ndqTarget').value) || 0) / 100;
-            const vasT = (parseFloat(document.getElementById('vasTarget').value) || 0) / 100;
+    <!-- Target allocation -->
+    <div class="card">
+      <span class="label">Target allocation</span>
+      <div class="target-grid">
+        <div class="target-item">
+          <span class="fund-label vgs">VGS %</span>
+          <input type="number" id="vgsTarget" value="45">
+        </div>
+        <div class="target-item">
+          <span class="fund-label ndq">NDQ %</span>
+          <input type="number" id="ndqTarget" value="35">
+        </div>
+        <div class="target-item">
+          <span class="fund-label vas">VAS %</span>
+          <input type="number" id="vasTarget" value="20">
+        </div>
+      </div>
+      <div class="warning" id="targetWarning">Targets must add up to exactly 100%</div>
+    </div>
 
-            // Show a warning line if targets do not sum up to 100%
-            const totalTargetPct = vgsT + ndqT + vasT;
-            const warningEl = document.getElementById('targetWarning');
-            if (Math.abs(totalTargetPct - 1.0) > 0.001) {
-                warningEl.classList.remove('hidden');
-            } else {
-                warningEl.classList.add('hidden');
-            }
+    <!-- Current balances -->
+    <div class="card">
+      <span class="label">Current balances</span>
+      <div class="balance-grid">
+        <div class="balance-item">
+          <span class="fund-label vgs">VGS</span>
+          <input type="number" id="vgsCurrent" value="4500">
+          <span class="holding-pct">holding <span id="vgsCurrentPct">0.0%</span></span>
+        </div>
+        <div class="balance-item">
+          <span class="fund-label ndq">NDQ</span>
+          <input type="number" id="ndqCurrent" value="3500">
+          <span class="holding-pct">holding <span id="ndqCurrentPct">0.0%</span></span>
+        </div>
+        <div class="balance-item">
+          <span class="fund-label vas">VAS</span>
+          <input type="number" id="vasCurrent" value="2000">
+          <span class="holding-pct">holding <span id="vasCurrentPct">0.0%</span></span>
+        </div>
+      </div>
 
-            // 2. Read entered money values
-            const vgsCurrent = parseFloat(document.getElementById('vgsCurrent').value) || 0;
-            const ndqCurrent = parseFloat(document.getElementById('ndqCurrent').value) || 0;
-            const vasCurrent = parseFloat(document.getElementById('vasCurrent').value) || 0;
-            const newDeposit = parseFloat(document.getElementById('newDeposit').value) || 0;
+      <div class="drift-row">
+        <span>Portfolio drift</span>
+        <span id="driftLabel">—</span>
+      </div>
+      <div class="drift-bar">
+        <div id="barVgs"></div>
+        <div id="barNdq"></div>
+        <div id="barVas"></div>
+      </div>
+    </div>
 
-            const currentTotal = vgsCurrent + ndqCurrent + vasCurrent;
-            const targetTotal = currentTotal + newDeposit;
+    <!-- New deposit -->
+    <div class="card">
+      <span class="label">New deposit</span>
+      <input type="number" id="newDeposit" value="1000" class="deposit-input">
+    </div>
 
-            // 3. Update current live percentage displays
-            if (currentTotal > 0) {
-                document.getElementById('vgsCurrentPct').innerText = ((vgsCurrent / currentTotal) * 100).toFixed(1) + '%';
-                document.getElementById('ndqCurrentPct').innerText = ((ndqCurrent / currentTotal) * 100).toFixed(1) + '%';
-                document.getElementById('vasCurrentPct').innerText = ((vasCurrent / currentTotal) * 100).toFixed(1) + '%';
-            } else {
-                document.getElementById('vgsCurrentPct').innerText = '0.0%';
-                document.getElementById('ndqCurrentPct').innerText = '0.0%';
-                document.getElementById('vasCurrentPct').innerText = '0.0%';
-            }
+    <!-- Buy orders -->
+    <div class="orders">
+      <div class="orders-header">
+        <span class="label" style="margin:0;">Buy orders</span>
+      </div>
+      <div class="order-row">
+        <div class="order-left">
+          <div class="dot vgs"></div>
+          <span class="order-fund">VGS</span>
+          <span class="order-sub" id="vgsBarLabel"></span>
+        </div>
+        <span class="order-amount" id="vgsBuy">$0.00</span>
+      </div>
+      <div class="order-row">
+        <div class="order-left">
+          <div class="dot ndq"></div>
+          <span class="order-fund">NDQ</span>
+          <span class="order-sub" id="ndqBarLabel"></span>
+        </div>
+        <span class="order-amount" id="ndqBuy">$0.00</span>
+      </div>
+      <div class="order-row">
+        <div class="order-left">
+          <div class="dot vas"></div>
+          <span class="order-fund">VAS</span>
+          <span class="order-sub" id="vasBarLabel"></span>
+        </div>
+        <span class="order-amount" id="vasBuy">$0.00</span>
+      </div>
+    </div>
 
-            // 4. Run the rebalancing math
-            let shortfalls = {
-                vgs: Math.max(0, (targetTotal * vgsT) - vgsCurrent),
-                ndq: Math.max(0, (targetTotal * ndqT) - ndqCurrent),
-                vas: Math.max(0, (targetTotal * vasT) - vasCurrent)
-            };
+    <div class="footer">Inflow-only — no sell orders generated</div>
+  </div>
 
-            const totalShortfall = shortfalls.vgs + shortfalls.ndq + shortfalls.vas;
+  <script>
+    function fmt(n) {
+      return '$' + n.toFixed(2);
+    }
 
-            let buys = {};
-            if (totalShortfall > 0) {
-                buys.vgs = (shortfalls.vgs / totalShortfall) * newDeposit;
-                buys.ndq = (shortfalls.ndq / totalShortfall) * newDeposit;
-                buys.vas = (shortfalls.vas / totalShortfall) * newDeposit;
-            } else {
-                buys.vgs = newDeposit * vgsT;
-                buys.ndq = newDeposit * ndqT;
-                buys.vas = newDeposit * vasT;
-            }
+    function calculate() {
+      const vgsT = (parseFloat(document.getElementById('vgsTarget').value) || 0) / 100;
+      const ndqT = (parseFloat(document.getElementById('ndqTarget').value) || 0) / 100;
+      const vasT = (parseFloat(document.getElementById('vasTarget').value) || 0) / 100;
 
-            // 5. Update the display orders screen
-            document.getElementById('vgsBuy').innerText = '$' + buys.vgs.toFixed(2);
-            document.getElementById('ndqBuy').innerText = '$' + buys.ndq.toFixed(2);
-            document.getElementById('vasBuy').innerText = '$' + buys.vas.toFixed(2);
-        }
+      const totalTargetPct = vgsT + ndqT + vasT;
+      const warningEl = document.getElementById('targetWarning');
+      warningEl.style.display = Math.abs(totalTargetPct - 1.0) > 0.001 ? 'block' : 'none';
 
-        // Make the calculation run instantly every time a user types a character
-        document.querySelectorAll('input').forEach(input => {
-            input.addEventListener('input', calculate);
-        });
+      const vgsCurrent = parseFloat(document.getElementById('vgsCurrent').value) || 0;
+      const ndqCurrent = parseFloat(document.getElementById('ndqCurrent').value) || 0;
+      const vasCurrent = parseFloat(document.getElementById('vasCurrent').value) || 0;
+      const newDeposit  = parseFloat(document.getElementById('newDeposit').value)  || 0;
 
-        // Run calculations immediately when the page loads
-        calculate();
-    </script>
+      const currentTotal = vgsCurrent + ndqCurrent + vasCurrent;
+      const targetTotal  = currentTotal + newDeposit;
+
+      const vgsPct = currentTotal > 0 ? (vgsCurrent / currentTotal) * 100 : 0;
+      const ndqPct = currentTotal > 0 ? (ndqCurrent / currentTotal) * 100 : 0;
+      const vasPct = currentTotal > 0 ? (vasCurrent / currentTotal) * 100 : 0;
+
+      document.getElementById('vgsCurrentPct').innerText = vgsPct.toFixed(1) + '%';
+      document.getElementById('ndqCurrentPct').innerText = ndqPct.toFixed(1) + '%';
+      document.getElementById('vasCurrentPct').innerText = vasPct.toFixed(1) + '%';
+
+      document.getElementById('barVgs').style.flex = vgsPct || 0.001;
+      document.getElementById('barNdq').style.flex = ndqPct || 0.001;
+      document.getElementById('barVas').style.flex = vasPct || 0.001;
+
+      document.getElementById('driftLabel').innerText =
+        vgsPct.toFixed(1) + '% · ' + ndqPct.toFixed(1) + '% · ' + vasPct.toFixed(1) + '%';
+
+      const shortfalls = {
+        vgs: Math.max(0, (targetTotal * vgsT) - vgsCurrent),
+        ndq: Math.max(0, (targetTotal * ndqT) - ndqCurrent),
+        vas: Math.max(0, (targetTotal * vasT) - vasCurrent),
+      };
+      const totalShortfall = shortfalls.vgs + shortfalls.ndq + shortfalls.vas;
+
+      let buys;
+      if (totalShortfall > 0) {
+        buys = {
+          vgs: (shortfalls.vgs / totalShortfall) * newDeposit,
+          ndq: (shortfalls.ndq / totalShortfall) * newDeposit,
+          vas: (shortfalls.vas / totalShortfall) * newDeposit,
+        };
+      } else {
+        buys = {
+          vgs: newDeposit * vgsT,
+          ndq: newDeposit * ndqT,
+          vas: newDeposit * vasT,
+        };
+      }
+
+      function setOrder(id, labelId, amount, deposit) {
+        const el = document.getElementById(id);
+        el.innerText = fmt(amount);
+        el.className = 'order-amount' + (amount === 0 ? ' zero' : '');
+        document.getElementById(labelId).innerText =
+          deposit > 0 ? ((amount / deposit) * 100).toFixed(0) + '% of deposit' : '';
+      }
+
+      setOrder('vgsBuy', 'vgsBarLabel', buys.vgs, newDeposit);
+      setOrder('ndqBuy', 'ndqBarLabel', buys.ndq, newDeposit);
+      setOrder('vasBuy', 'vasBarLabel', buys.vas, newDeposit);
+    }
+
+    document.querySelectorAll('input').forEach(el => el.addEventListener('input', calculate));
+    calculate();
+  </script>
 </body>
 </html>
