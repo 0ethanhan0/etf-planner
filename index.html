@@ -143,6 +143,24 @@
       background: rgba(192,122,114,0.08);
     }
 
+    /* ── Order warning ── */
+    .order-warning {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: rgba(192,122,114,0.12);
+      border: 1px solid var(--danger);
+      border-radius: 4px;
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 10px;
+      font-size: 0.75rem;
+      color: var(--danger);
+    }
+    .order-warning-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
     /* ── Balance grid ── */
     .balance-grid {
       display: grid;
@@ -195,6 +213,9 @@
     #barVgs { background: var(--vgs); }
     #barNdq { background: var(--ndq); }
     #barVas { background: var(--vas); }
+    #afterBarVgs { background: var(--vgs); }
+    #afterBarNdq { background: var(--ndq); }
+    #afterBarVas { background: var(--vas); }
 
     /* ── Buy orders ── */
     .orders {
@@ -343,6 +364,12 @@
       <input type="number" id="newDeposit" value="1000" class="deposit-input">
     </div>
 
+    <!-- Order warning -->
+    <div class="order-warning" id="orderWarning">
+      <span class="order-warning-icon">⚠️</span>
+      <span>Targets don't add up to 100% — buy orders are unreliable until fixed.</span>
+    </div>
+
     <!-- Buy orders -->
     <div class="orders">
       <div class="orders-header">
@@ -374,6 +401,24 @@
       </div>
     </div>
 
+    <!-- Portfolio after buying -->
+    <div class="orders" style="margin-bottom:10px;">
+      <div class="orders-header">
+        <span class="label" style="margin:0;">Portfolio after buying</span>
+      </div>
+      <div style="padding: 1rem 1.25rem;">
+        <div class="drift-row">
+          <span>New allocation</span>
+          <span id="afterLabel">—</span>
+        </div>
+        <div class="drift-bar">
+          <div id="afterBarVgs"></div>
+          <div id="afterBarNdq"></div>
+          <div id="afterBarVas"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="footer">Inflow-only — no sell orders generated</div>
   </div>
 
@@ -389,7 +434,11 @@
 
       const totalTargetPct = vgsT + ndqT + vasT;
       const warningEl = document.getElementById('targetWarning');
-      warningEl.style.display = Math.abs(totalTargetPct - 1.0) > 0.001 ? 'block' : 'none';
+      const invalid = Math.abs(totalTargetPct - 1.0) > 0.001;
+      warningEl.style.display = invalid ? 'block' : 'none';
+
+      // Big warning near buy orders
+      document.getElementById('orderWarning').style.display = invalid ? 'flex' : 'none';
 
       const vgsCurrent = parseFloat(document.getElementById('vgsCurrent').value) || 0;
       const ndqCurrent = parseFloat(document.getElementById('ndqCurrent').value) || 0;
@@ -435,6 +484,20 @@
           vas: newDeposit * vasT,
         };
       }
+
+      // Portfolio after buying bar
+      const newVgs = vgsCurrent + buys.vgs;
+      const newNdq = ndqCurrent + buys.ndq;
+      const newVas = vasCurrent + buys.vas;
+      const newTotal = newVgs + newNdq + newVas;
+      const afterVgsPct = newTotal > 0 ? (newVgs / newTotal) * 100 : 0;
+      const afterNdqPct = newTotal > 0 ? (newNdq / newTotal) * 100 : 0;
+      const afterVasPct = newTotal > 0 ? (newVas / newTotal) * 100 : 0;
+      document.getElementById('afterBarVgs').style.flex = afterVgsPct || 0.001;
+      document.getElementById('afterBarNdq').style.flex = afterNdqPct || 0.001;
+      document.getElementById('afterBarVas').style.flex = afterVasPct || 0.001;
+      document.getElementById('afterLabel').innerText =
+        afterVgsPct.toFixed(1) + '% · ' + afterNdqPct.toFixed(1) + '% · ' + afterVasPct.toFixed(1) + '%';
 
       function setOrder(id, labelId, amount, deposit) {
         const el = document.getElementById(id);
